@@ -1,3 +1,6 @@
+
+#TODO ```twine upload dist/*```
+
 # zenodopy
 
 ![Tests](https://github.com/lgloege/zenodopy/actions/workflows/tests.yaml/badge.svg)
