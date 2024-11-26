@@ -1,0 +1,8 @@
+~*
+*~
+zennewpy.egg-info
+dist
+venv
+zennewpy
+build
+*.pyc
