@@ -1,43 +1,25 @@
+# ZennewPy
 
-#TODO ```twine upload dist/*```
+ZennewPy is a Python package for interacting with the Zenodo API, allowing users to manage depositions, metadata, and files on Zenodo.
 
-# zenodopy
+## Features
 
-![Tests](https://github.com/lgloege/zenodopy/actions/workflows/tests.yaml/badge.svg)
-[![codecov](https://codecov.io/gh/lgloege/zenodopy/branch/main/graph/badge.svg?token=FVCS71HPHC)](https://codecov.io/gh/lgloege/zenodopy)
-[![pypi](https://badgen.net/pypi/v/zenodopy)](https://pypi.org/project/zenodopy)
-[![License:MIT](https://img.shields.io/badge/License-MIT-lightgray.svg?style=flt-square)](https://opensource.org/licenses/MIT)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/lgloege/zenodopy/issues)
+- Retrieve all depositions with full metadata
+- Find community identifiers
+- Set and unset depositions
+- Create, delete, and manage depositions
+- Upload and update files
+- Publish depositions
+- Create new versions of existing depositions
+- Modify metadata for both published and unpublished depositions
 
-### Project under active deveopment, not production ready
+## Installation
 
-A Python 3.6+ package to manage [Zenodo](https://zenodo.org/) repositories.
-
-### Functions Implemented
-
-- `.create_project()`: create a new project
-- `.upload_file()`: upload file to project
-- `.download_file()`: download a file from a project
-- `.delete_file()`: permanently removes a file from a project
-- `.get_urls_from_doi()`: returns the files urls for a given doi
-
-Installing
-----------
-
-### PyPi
-
-```sh
-pip install zenodopy==0.3.0
+```bash
+pip install zennewpy
 ```
 
-### GitHub
-
-```sh
-pip install -e git+https://github.com/lgloege/zenodopy.git#egg=zenodopy
-```
-
-Using the Package
------------------
+## Usage
 
 1. **Create a Zenodo access token** by first logging into your account and clicking on your username in the top right corner. Navigate to "Applications" and then "+new token" under "Personal access tokens".  Keep this window open while you proceed to step 2 because **the token is only displayed once**. Note that Sandbox.zenodo is used for testing and zenodo for production. If you want to use both, create for each a token as desribed above.
 2. **Store the token** in `~/.zenodo_token` using the following command.
@@ -50,44 +32,77 @@ Using the Package
  { echo 'ACCESS_TOKEN-sandbox: your_access_token_here' } > ~/.zenodo_token
 ```
 
-3. **start using the `zenodopy` package**
 
 ```python
-import zenodopy
+import zennewpy
 
-# always start by creating a Client object
-zeno = zenodopy.Client(sandbox=True)
+# Initialize the client
+client = zennewpy.Client(sandbox=True)
 
-# list project id's associated to zenodo account
-zeno.list_projects
+# Set up your Zenodo token
+# Ensure you have a ~/.zenodo_token file with your ACCESS_TOKEN
 
-# create a project
-zeno.create_project(title="test_project", upload_type="other")
-# your zeno object now points to this newly created project
 
-# create a file to upload
-with open("~/test_file.txt", "w+") as f:
-    f.write("Hello from zenodopy")
+# Create a new deposition
+deposition_id = client.create_new_deposition()
 
-# upload file to zenodo
-zeno.upload_file("~/test.file.txt")
+# Set the client to work with this deposition
+client.set_deposition(deposition_id)
 
-# list files of project
-zeno.list_files
+# Add metadata
+metadata = {
+    "title": "My Research Data",
+    "description": "This dataset contains...",
+    "upload_type": "dataset"
+}
+client.create_metadata(metadata)
 
-# set project to other project id's
-zeno.set_project("<id>")
+# Upload a file
+client.upload_file("path/to/your/file.csv")
 
-# delete project
-zeno._delete_project(dep_id="<id>")
+# Publish the deposition
+client.publish_deposition()
 ```
 
-Notes
------
+## Main Classes and Methods
 
-This project is under active development. Here is a list of things that needs improvement:
+### Client
 
-- **more tests**: need to test uploading and downloading files
-- **documentation**: need to setup a readthedocs
-- **download based on DOI**: right now you can only download from your own projects. Would be nice to download from
-- **asyncronous functions**: use `asyncio` and `aiohttp` to write async functions. This will speed up downloading multiple files.
+The main class for interacting with Zenodo.
+
+- `__init__(self, title=None, bucket=None, deposition_id=None, sandbox=None, token=None)`
+- `get_all_depositions()`
+- `set_deposition(id_value)`
+- `create_new_deposition()`
+- `delete_deposition(deposition_id=None)`
+- `create_metadata(metadata, **kwargs)`
+- `upload_file(file_path, remote_filename=None, file_id=None)`
+- `publish_deposition()`
+- `create_new_version()`
+- `modify_metadata(metadata_updates, **kwargs)`
+
+## Authentication
+
+ZennewPy uses a token-based authentication system. Store your Zenodo API token in a `~/.zenodo_token` file.
+
+## Contributing
+
+Contributions to ZennewPy are welcome. Please ensure you follow the coding style and add unit tests for any new features.
+
+## Acknowledgments
+
+ZennewPy is a fork of zenodopy, an original project by L. Gloege. This
+package builds upon the foundational work of the original zenodopy
+library, extending and modifying its functionality while maintaining
+the core API interaction principles.
+
+## License
+
+ZennewPy is distributed under the MIT License, which allows for free use, modification, and distribution of the software, in line with the original zenodopy project's licensing.
+Key Acknowledgment: This project respectfully derives from and credits
+the original zenodopy library, preserving its open-source spirit and
+collaborative approach.
+
+## Citation
+
+If you use ZennewPy in your research, please cite it using the information provided in our CITATION.cff file. You can find this file in the root directory of our GitHub repository.

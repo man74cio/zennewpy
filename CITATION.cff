@@ -15,5 +15,5 @@ authors:
 repository-code: 'https://gitlab.obspm.fr/mmancini/zennewpy'
 abstract: Client to work with Zenodo API
 license: MIT
-version: 0.1.0
+version: 0.1.1
 date-released: '2024-11-26'
