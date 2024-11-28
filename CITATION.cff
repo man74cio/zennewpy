@@ -14,6 +14,10 @@ authors:
     orcid: 'https://orcid.org/0000-0003-2348-1890'
 repository-code: 'https://gitlab.obspm.fr/mmancini/zennewpy'
 abstract: Client to work with Zenodo API
+identifiers:
+  - type: doi
+  value: 10.5281/zenodo.14234803
+
 license: MIT
 version: 0.1.1
 date-released: '2024-11-26'
