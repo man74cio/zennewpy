@@ -16,7 +16,7 @@ repository-code: 'https://gitlab.obspm.fr/mmancini/zennewpy'
 abstract: Client to work with Zenodo API
 identifiers:
   - type: doi
-  value: 10.5281/zenodo.14234803
+    value: 
 
 license: MIT
 version: 0.1.1
