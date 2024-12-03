@@ -50,6 +50,54 @@ def make_zipfile(path, ziph):
                                        os.path.join(path, '..')))
 
 
+def prepare_zip(source_dir=None, output_file=None):
+    """Prepare a zip dir.
+
+    This will: 
+        1. zip the directory, 
+    Args:
+        source_dir (str): path to directory to tar
+        output_file (str): name of output file (optional)
+            defaults to using the source_dir name as output_file
+    """
+    # make sure source directory exists
+    source_dir = os.path.expanduser(source_dir)
+    source_obj = Path(source_dir)
+    if not source_obj.exists():
+        raise FileNotFoundError(f"{source_dir} does not exist")
+    # acceptable extensions for output file
+    acceptable_extensions = ['.zip']
+    # use name of source_dir for output_file if none is included
+    if not output_file:
+        output_file = f"{source_obj.stem}.zip"
+        output_obj = Path(output_file)
+    else:
+        output_file = os.path.expanduser(output_file)
+        output_obj = Path(output_file)
+        extension = ''.join(output_obj.suffixes)  # gets extension like .tar.gz
+        # make sure extension is acceptable
+        if extension not in acceptable_extensions:
+            raise Exception(f"Extension must be in {acceptable_extensions}")
+        # add an extension if not included
+        if not extension:
+            output_file = os.path.expanduser(output_file + '.zip')
+            output_obj = Path(output_file)
+
+    # check to make sure output file doesn't already exist
+    if output_obj.exists():
+        raise Exception(f"{output_obj} already exists. Please chance the name")
+    # create tar directory if does not exist
+    if output_obj.parent.exists():
+        with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            make_zipfile(source_dir, zipf)
+    else:
+        os.makedirs(output_obj.parent)
+        with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            make_zipfile(source_dir, zipf)
+
+    return output_file
+
+
 class BearerAuth(requests.auth.AuthBase):
     """Bearer Authentication"""
 
@@ -634,6 +682,11 @@ class Client(object):
         except Exception as e:
             raise Exception(f"Failed to upload new file: {str(e)}")
    
+
+    d
+    def update_zipping(self, source_dir,zipname):
+        TOOOOOOO CONINUE USING prepare_zip
+        os.remove(output_file)
 
     def get_file_ids(self):
         """
