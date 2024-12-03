@@ -317,18 +317,17 @@ class Client(object):
         
         # hack to the problem that the deposition_id is not created instantaneously on the server
         n_try = 8
+        delta=1
         response = requests.get(url, auth=self._bearer_auth, params=params)
         depositions = response.json()
         while not depositions and n_try > 0:
             response = requests.get(url, auth=self._bearer_auth, params=params)
             depositions = response.json()  
-            time.sleep(1)
+            time.sleep(delta)
             n_try -=1
-
+            delta+=0.5
         response.raise_for_status()
             
-        
-        
         if not depositions:
             raise ValueError(f"No depositions found for ID {id_value}.")
         
@@ -441,43 +440,7 @@ class Client(object):
             if response.status_code < 400:
                 print(f"Deposition {ii} deleted")
 
-    def create_metadata(self, metadata,  **kwargs):
-        """
-        Creates or updates metadata for a deposition.
-
-        Args:
-            deposition_id (int): The ID of the deposition.
-            metadata (dict): The metadata to set.
-
-        Returns:
-            dict: The updated deposition data.
-        """
-        if not self.associated: 
-            print("create_metadata: deposition is not associated.")
-            return 
-        # Update metadata with additional fields from kwargs
-        for key, value in kwargs.items():
-            if isinstance(value, dict):
-                # If the value is a dictionary, update or add it to metadata
-                metadata[key] = metadata.get(key, {})
-                metadata[key].update(value)
-            else:
-                # If it's not a dictionary, simply add or update the field
-                metadata[key] = value
-
-
-        url = f"{self._endpoint}/deposit/depositions/{self.deposition_id}"
-        headers = {"Content-Type": "application/json"}
-        data = {"metadata": metadata}
-
-        response = requests.put(url, auth=self._bearer_auth, data=json.dumps(data), headers=headers)
-        if response.status_code >= 500:
-            self.delete_deposition()
-        response.raise_for_status()
-
-
-        return response.json()
-
+    
     def upload_file(self,file_path, remote_filename=None, file_id=None):
         """
         Uploads a file to a Zenodo deposition using PUT (if file_id is provided) or POST (for new files).
@@ -583,63 +546,86 @@ class Client(object):
         try:
             response = requests.post(url, auth=self._bearer_auth)
             response.raise_for_status()
-            new_id = response.json()['id']
-            
-            # Wait briefly to allow Zenodo to index the new version
-            # time.sleep(2)  # Adjust as necessary
-        
-            self.set_deposition(new_id)
-            if self.deposition_id != new_id:
-                print("Warning : association new deposition_id is not done!")
-
-            return new_id
-        
+                    
         except requests.exceptions.RequestException as e:
             if hasattr(e, 'response'):
                 print(f"Response content: {e.response.content}")
-            raise
 
+        new_id = response.json()['id']
+        self.set_deposition(new_id)
 
-    def modify_metadata(self, metadata_updates, **kwargs):
+        if self.deposition_id != new_id:
+            print(f"Warning : association new deposition_id is not done! Deleting version :{new_id}")
+            self.delete_deposition(new_id)
+            return None
+                
+        return new_id
+
+    def push_metadata(self, metadata):
+        """
+        Creates or updates metadata for a deposition.
+
+        Args:
+            deposition_id (int): The ID of the deposition.
+            metadata (dict): The metadata to set.
+
+        Returns:
+            dict: The updated deposition data.
+        """
+        if not self.associated: 
+            print("push_metadata: deposition is not associated.")
+            return 
+        
+
+        url = f"{self._endpoint}/deposit/depositions/{self.deposition_id}"
+        headers = {"Content-Type": "application/json"}
+        data = {"metadata": metadata}
+
+        response = requests.put(url, auth=self._bearer_auth, data=json.dumps(data), headers=headers)
+        if response.status_code >= 500:
+            self.delete_deposition()
+        response.raise_for_status()
+
+        return response.json()
+
+    def update_metadata(self, metadata_updates):
         """
         Modifies metadata of a deposition (published or not).
 
         Args:
             metadata_updates (dict): The metadata fields to update.
-            **kwargs: Additional metadata fields to update.
 
         Returns:
             dict: The updated deposition data.
         """
         if not self.associated:
-            print (f'Error in "modify_update" Deposition is not associated !')
+            print(f'Error in "modify_update" Deposition is not associated!')
             return None
-        
+
         # Check if the deposition is published
         current_deposition = self.deposition
-        
+        current_metadata = current_deposition['metadata']
+
         if self.is_published:
             new_id = self.create_new_version()
             print(f"New deposition_id {new_id} was created for concept_id {self.concept_id}")
             current_deposition = self.deposition
 
-        current_metadata = current_deposition['metadata']
-
         # Update the metadata
-        current_metadata.update(metadata_updates)
-        
-
-        # Update metadata with additional fields from kwargs
-        for key, value in kwargs.items():
-            if isinstance(value, dict):
-                current_metadata[key] = current_metadata.get(key, {})
-                current_metadata[key].update(value)
+        for key, value in metadata_updates.items():
+            if isinstance(value, list) and key in current_metadata:
+                # If the value is a list and the key already exists, extend the list
+                if isinstance(current_metadata[key], list):
+                    current_metadata[key].extend(value)
+                else:
+                    # If the existing value is not a list, convert it to a list and extend
+                    current_metadata[key] = [current_metadata[key]] + value
             else:
+                # For non-list values or new keys, simply update/add the value
                 current_metadata[key] = value
 
-        # Use the create_metadata method to update
-        result = self.create_metadata(current_metadata)
-        return result
+        # Use the push_metadata method to update
+        return self.push_metadata(current_metadata)
 
     def update_file(self, file_path,remote_filename=None):
         """
@@ -686,10 +672,6 @@ class Client(object):
         except Exception as e:
             raise Exception(f"Failed to upload new file: {str(e)}")
    
-
-    # def update_zipping(self, source_dir,zipname):
-    #     TOOOOOOO CONINUE USING prepare_zip
-    #     os.remove(output_file)
 
     def get_file_ids(self):
         """
@@ -794,7 +776,7 @@ if __name__ == '__main__':
 
     zcd.set_deposition(deposition_id)
 
-    zcd.create_metadata(metadata)
+    zcd.push_metadata(metadata)
 
     # Upload a file
     zcd.upload_file('/tmp/eos.zip', 'remote_filename.zip')
@@ -803,7 +785,7 @@ if __name__ == '__main__':
     #zcd.publish_deposition()
 
     # Modify metadata (even after publishing)
-    zcd.modify_metadata({'title': 'Updated Dataset Title'})
+    zcd.update_metadata({'title': 'Updated Dataset Title'})
 
     zcd.update_file('/tmp/eos2.zip',remote_filename='remote_filename.zip')
 
