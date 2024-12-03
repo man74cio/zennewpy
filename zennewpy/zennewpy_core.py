@@ -136,7 +136,6 @@ class Client(object):
             self._endpoint = "https://zenodo.org/api"
             self._doi_pattern = r'^10\.5281/zenodo\.\d+$'
 
-        self.title = title
         self.bucket = bucket
         self.deposition_id = deposition_id
         self.sandbox = sandbox
@@ -152,10 +151,10 @@ class Client(object):
     def __str__(self):
         return f"{self.title} --- {self.deposition_id}"
 
+
     # ---------------------------------------------
     # hidden functions
     # ---------------------------------------------
-
     @staticmethod
     def _get_upload_types():
         """Acceptable upload types
@@ -175,6 +174,10 @@ class Client(object):
             "physicalobject",
             "other"
         ]
+
+    @property
+    def title(self):
+        self.title = self.get_metadata()["title"]
 
     @staticmethod
     def _read_config(path=None):
@@ -588,6 +591,9 @@ class Client(object):
             # time.sleep(2)  # Adjust as necessary
         
             self.set_deposition(new_id)
+            if self.deposition_id != new_id:
+                print("Warning : association new deposition_id is not done!")
+
             return new_id
         
         except requests.exceptions.RequestException as e:
@@ -614,7 +620,7 @@ class Client(object):
         # Check if the deposition is published
         current_deposition = self.deposition
         
-        if current_deposition.get('state') == 'done':
+        if self.is_published:
             new_id = self.create_new_version()
             print(f"New deposition_id {new_id} was created for concept_id {self.concept_id}")
             current_deposition = self.deposition
@@ -683,10 +689,9 @@ class Client(object):
             raise Exception(f"Failed to upload new file: {str(e)}")
    
 
-    d
-    def update_zipping(self, source_dir,zipname):
-        TOOOOOOO CONINUE USING prepare_zip
-        os.remove(output_file)
+    # def update_zipping(self, source_dir,zipname):
+    #     TOOOOOOO CONINUE USING prepare_zip
+    #     os.remove(output_file)
 
     def get_file_ids(self):
         """
