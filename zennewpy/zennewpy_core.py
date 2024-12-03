@@ -136,6 +136,7 @@ class Client(object):
             self._endpoint = "https://zenodo.org/api"
             self._doi_pattern = r'^10\.5281/zenodo\.\d+$'
 
+        self.title = title
         self.bucket = bucket
         self.deposition_id = deposition_id
         self.sandbox = sandbox
@@ -175,9 +176,6 @@ class Client(object):
             "other"
         ]
 
-    @property
-    def title(self):
-        self.title = self.get_metadata()["title"]
 
     @staticmethod
     def _read_config(path=None):
