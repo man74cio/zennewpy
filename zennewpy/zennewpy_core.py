@@ -345,7 +345,7 @@ class Client(object):
    
     def unset_deposition(self):
         """
-        Unsets the current deposition settings, resetting related attributes.
+        Unset the current deposition settings, resetting related attributes.
         """
         self.title = None
         self.bucket = None
