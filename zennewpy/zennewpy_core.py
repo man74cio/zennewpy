@@ -458,6 +458,13 @@ class Client(object):
         if remote_filename is None:
             remote_filename = os.path.basename(file_path)
 
+
+        r = requests.get(f"{self._endpoint}/deposit/depositions/{deposition_id}", 
+                      auth=self._bearer_auth)
+        
+        self.bucket = r.json()['links']['bucket']
+        
+
         if file_id:
             print("this functionality does not work at moment on Zenodo!!")
             # Update existing file using PUT
@@ -465,12 +472,16 @@ class Client(object):
             with open(file_path, "rb") as file:
                 response = requests.put(url, auth=self._bearer_auth, data=file)
         else:
+            with open(file_path, 'rb') as file:
+                response = requests.put(f"{self.bucket}/{remote_filename}", 
+                         data=file, 
+                         auth=self._bearer_auth)
             # Upload new file using POST
-            url = f"{self._endpoint}/deposit/depositions/{deposition_id}/files"
-            with open(file_path, "rb") as file:
-                data = {"name": remote_filename}
-                files = {"file": file}
-                response = requests.post(url, auth=self._bearer_auth, data=data, files=files)
+            # url = f"{self._endpoint}/deposit/depositions/{deposition_id}/files"
+            # with open(file_path, "rb") as file:
+            #     data = {"name": remote_filename}
+            #     files = {"file": file}
+            #     response = requests.post(url, auth=self._bearer_auth, data=data, files=files)
 
         response.raise_for_status()
         file_data = response.json()
@@ -643,7 +654,6 @@ class Client(object):
             print("Deposition is published. Before to update file please create a new version")
             return 
 
-        file_id = self.get_file_ids()[remote_filename]
 
         # Check if the new file exists
         if not os.path.exists(file_path):
@@ -654,17 +664,20 @@ class Client(object):
             raise PermissionError(f"No permission to read the file {file_path}.")
 
         # First, try to delete the existing file
-        delete_url = f"{self._endpoint}/deposit/depositions/{self.deposition_id}/files/{file_id}"
+        file_id = self.get_file_ids().get(remote_filename,None)
+        if file_id :            
+            delete_url = f"{self._endpoint}/deposit/depositions/{self.deposition_id}/files/{file_id}"
 
-        try:
-            delete_response = requests.delete(delete_url, auth=self._bearer_auth)
-            delete_response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 404:
-                # File not found, log a warning and continue with upload
-                print(f"Warning: File {file_id} not found. Proceeding with upload.")
-            else:
-                raise Exception(f"Failed to delete existing file: {str(e)}")
+
+            try:
+                delete_response = requests.delete(delete_url, auth=self._bearer_auth)
+                delete_response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 404:
+                    # File not found, log a warning and continue with upload
+                    print(f"Warning: File {file_id} not found. Proceeding with upload.")
+                else:
+                    raise Exception(f"Failed to delete existing file: {str(e)}")
 
         # Then, upload the new file
         try:
